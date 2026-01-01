@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>NEON DEFENDER</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="uiTop">
+    <div class="brand">NEON DEFENDER</div>
+    <div class="stats">
+      <span id="wave">Wave 1</span>
+      <span id="score">Score 0</span>
+      <span id="hp">HP 10/10</span>
+    </div>
+    <button id="muteBtn" class="btn small" aria-label="Mute">🔊</button>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <!-- Mobile controls overlay -->
+  <div id="touchUI" class="hidden">
+    <div id="stickBase">
+      <div id="stickKnob"></div>
+    </div>
+    <button id="shootBtn" class="btn shoot">SHOOT</button>
+    <div class="hint">Drag joystick • Tap SHOOT</div>
+  </div>
+
+  <!-- Start / Pause overlay -->
+  <div id="overlay" class="overlay">
+    <div class="panel">
+      <h1>NEON DEFENDER</h1>
+      <p class="sub">
+        Survive the waves. Pick an upgrade after each round.
+      </p>
+
+      <div id="controlHint" class="controlHint"></div>
+
+      <div class="row">
+        <button id="startBtn" class="btn">START</button>
+        <button id="howBtn" class="btn ghost">HOW</button>
+      </div>
+
+      <div id="how" class="how hidden">
+        <ul>
+          <li><b>PC:</b> WASD / Arrow keys to move, <b>Space</b> to shoot.</li>
+          <li><b>Mobile:</b> Drag joystick to move, tap <b>SHOOT</b>.</li>
+          <li>Defeat all enemies to advance and choose an upgrade.</li>
+        </ul>
+      </div>
+
+      <p class="tiny">Tip: tap the canvas once to enable audio on mobile.</p>
+    </div>
+  </div>
+
+  <!-- Upgrade screen -->
+  <div id="upgrade" class="overlay hidden">
+    <div class="panel wide">
+      <h2>CHOOSE AN UPGRADE</h2>
+      <p class="sub">Pick one to prepare for the next wave.</p>
+      <div id="upgradeGrid" class="upgradeGrid"></div>
+      <p class="tiny">Upgrades stack. Enemies get tougher each wave.</p>
+    </div>
+  </div>
+
+  <!-- Game over -->
+  <div id="gameover" class="overlay hidden">
+    <div class="panel">
+      <h2>GAME OVER</h2>
+      <p id="finalLine" class="sub"></p>
+      <div class="row">
+        <button id="restartBtn" class="btn">RESTART</button>
+        <button id="shareBtn" class="btn ghost">COPY SCORE</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
