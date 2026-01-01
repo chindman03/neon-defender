@@ -40,6 +40,16 @@
 
   if (isTouch) ui.touchUI.classList.remove("hidden");
 
+  // Extra iOS gesture prevention (belt + suspenders)
+  if (isTouch) {
+    document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
+    document.addEventListener("gesturechange", (e) => e.preventDefault(), { passive: false });
+    document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: false });
+
+    // prevent accidental scroll when browser still tries (some iOS edge cases)
+    document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+  }
+
   // ---------- Audio: 8-bit-ish loop (WebAudio synth) ----------
   let audio = {
     ctx: null,
@@ -83,7 +93,7 @@
     const stepDur = secondsPerBeat / 2; // 8th notes
 
     // A tiny "Tron-ish" arpeggio loop
-    const bass = [55, 55, 73.42, 82.41, 55, 55, 98.00, 82.41]; // A1, D2, E2-ish
+    const bass = [55, 55, 73.42, 82.41, 55, 55, 98.00, 82.41];
     const arp  = [440, 554.37, 659.25, 880, 659.25, 554.37, 493.88, 659.25];
 
     while (audio.nextNoteTime < a.currentTime + audio.scheduleAhead) {
@@ -158,8 +168,10 @@
 
   // input
   const keys = new Set();
-  let shooting = false;
-  let moveX = 0, moveY = 0;
+
+  // Multi-touch friendly shooting state
+  const pressedPointers = new Set(); // pointerIds currently holding shoot
+  let shooting = false;              // derived from pressedPointers OR keyboard
 
   // touch joystick
   let stick = {
@@ -208,6 +220,8 @@
     bullets.length = 0;
     enemies.length = 0;
     particles.length = 0;
+    pressedPointers.clear();
+    shooting = false;
 
     player.x = W / 2;
     player.y = H * 0.7;
@@ -249,51 +263,16 @@
 
   // ---------- Upgrades ----------
   const upgradePool = [
-    {
-      key: "firerate",
-      name: "Overclock",
-      desc: "+20% fire rate",
-      apply: () => { player.fireRate *= 1.2; }
-    },
-    {
-      key: "damage",
-      name: "Hotter Lasers",
-      desc: "+1 damage",
-      apply: () => { player.damage += 1; }
-    },
-    {
-      key: "speed",
-      name: "Thrusters",
-      desc: "+12% move speed",
-      apply: () => { player.speed *= 1.12; }
-    },
-    {
-      key: "hp",
-      name: "Reinforced Hull",
-      desc: "+3 max HP (heal 3)",
-      apply: () => {
+    { key: "firerate", name: "Overclock", desc: "+20% fire rate", apply: () => { player.fireRate *= 1.2; } },
+    { key: "damage", name: "Hotter Lasers", desc: "+1 damage", apply: () => { player.damage += 1; } },
+    { key: "speed", name: "Thrusters", desc: "+12% move speed", apply: () => { player.speed *= 1.12; } },
+    { key: "hp", name: "Reinforced Hull", desc: "+3 max HP (heal 3)", apply: () => {
         player.hpMax += 3;
         player.hp = Math.min(player.hpMax, player.hp + 3);
-      }
-    },
-    {
-      key: "bulletspeed",
-      name: "Rail Charge",
-      desc: "+18% bullet speed",
-      apply: () => { player.bulletSpeed *= 1.18; }
-    },
-    {
-      key: "bigshot",
-      name: "Wide Bolts",
-      desc: "+2 bullet size",
-      apply: () => { player.bulletSize += 2; }
-    },
-    {
-      key: "spread",
-      name: "Tri-Spark",
-      desc: "Add slight spread (more coverage)",
-      apply: () => { player.spread = clamp(player.spread + 0.08, 0, 0.30); }
-    },
+      } },
+    { key: "bulletspeed", name: "Rail Charge", desc: "+18% bullet speed", apply: () => { player.bulletSpeed *= 1.18; } },
+    { key: "bigshot", name: "Wide Bolts", desc: "+2 bullet size", apply: () => { player.bulletSize += 2; } },
+    { key: "spread", name: "Tri-Spark", desc: "Add slight spread (more coverage)", apply: () => { player.spread = clamp(player.spread + 0.08, 0, 0.30); } },
   ];
 
   function showUpgrades() {
@@ -351,7 +330,7 @@
     const spread = player.spread;
 
     for (let i = 0; i < shots; i++) {
-      const t = shots === 1 ? 0 : (i - 1) * spread; // -spread, 0, +spread
+      const t = shots === 1 ? 0 : (i - 1) * spread;
       const ang = baseAng + t;
 
       bullets.push({
@@ -365,7 +344,6 @@
       });
     }
 
-    // tiny shoot particle
     burst(player.x, player.y, 6, 190);
   }
 
@@ -396,13 +374,11 @@
 
   window.addEventListener("keyup", (e) => {
     keys.delete(e.key);
-    if (e.key === " ") shooting = false;
+    if (e.key === " ") shooting = pressedPointers.size > 0; // don't cancel touch shooting
   });
 
   // Touch: joystick
   function setStickKnob(nx, ny) {
-    stick.knobX = nx;
-    stick.knobY = ny;
     ui.stickKnob.style.transform = `translate(${nx}px, ${ny}px)`;
   }
 
@@ -419,9 +395,15 @@
 
   ui.stickBase.addEventListener("pointerdown", (e) => {
     if (!isTouch) return;
+    e.preventDefault();
+
+    // If joystick already being controlled, ignore additional pointers
+    if (stick.active) return;
+
     stick.active = true;
     stick.id = e.pointerId;
     ui.stickBase.setPointerCapture(e.pointerId);
+
     const r = baseRect();
     stick.baseX = r.left + r.width / 2;
     stick.baseY = r.top + r.height / 2;
@@ -429,6 +411,8 @@
 
   ui.stickBase.addEventListener("pointermove", (e) => {
     if (!stick.active || e.pointerId !== stick.id) return;
+    e.preventDefault();
+
     const dx = e.clientX - stick.baseX;
     const dy = e.clientY - stick.baseY;
     const len = Math.hypot(dx, dy);
@@ -441,16 +425,44 @@
   });
 
   ui.stickBase.addEventListener("pointerup", (e) => {
-    if (e.pointerId === stick.id) resetStick();
+    if (e.pointerId === stick.id) {
+      e.preventDefault();
+      resetStick();
+    }
   });
   ui.stickBase.addEventListener("pointercancel", (e) => {
-    if (e.pointerId === stick.id) resetStick();
+    if (e.pointerId === stick.id) {
+      e.preventDefault();
+      resetStick();
+    }
   });
 
-  // Shoot button
-  ui.shootBtn.addEventListener("pointerdown", () => { shooting = true; });
-  ui.shootBtn.addEventListener("pointerup", () => { shooting = false; });
-  ui.shootBtn.addEventListener("pointercancel", () => { shooting = false; });
+  // Shoot button (multi-touch safe)
+  function releaseShootPointer(pointerId) {
+    pressedPointers.delete(pointerId);
+    shooting = pressedPointers.size > 0 || keys.has(" ");
+  }
+
+  ui.shootBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    ui.shootBtn.setPointerCapture(e.pointerId);
+    pressedPointers.add(e.pointerId);
+    shooting = true;
+  });
+
+  ui.shootBtn.addEventListener("pointerup", (e) => {
+    e.preventDefault();
+    releaseShootPointer(e.pointerId);
+  });
+
+  ui.shootBtn.addEventListener("pointercancel", (e) => {
+    e.preventDefault();
+    releaseShootPointer(e.pointerId);
+  });
+
+  ui.shootBtn.addEventListener("lostpointercapture", (e) => {
+    releaseShootPointer(e.pointerId);
+  });
 
   // Buttons
   ui.howBtn.addEventListener("click", () => ui.how.classList.toggle("hidden"));
@@ -573,7 +585,7 @@
       const p = particles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= Math.pow(0.001, dt); // quick damping
+      p.vx *= Math.pow(0.001, dt);
       p.vy *= Math.pow(0.001, dt);
       p.life -= dt;
       if (p.life <= 0) particles.splice(i, 1);
@@ -581,7 +593,6 @@
 
     // win wave -> upgrade
     if (!state.inUpgrade && enemies.length === 0) {
-      // small heal between waves
       player.hp = Math.min(player.hpMax, player.hp + 2);
       syncUI();
       showUpgrades();
@@ -709,7 +720,6 @@
 
     if (!state.inUpgrade) update(dt);
     else {
-      // still schedule music while paused in upgrade
       if (audio.ctx && audio.started && !audio.muted) scheduleMusic();
     }
     render();
@@ -718,12 +728,13 @@
   }
 
   // ---------- Start in overlay ----------
-  // Also: let clicking canvas dismiss overlay + start (nice for mobile)
-  canvas.addEventListener("pointerdown", () => {
+  canvas.addEventListener("pointerdown", (e) => {
+    // only react to direct canvas taps (not UI overlays)
     if (!state.running && !ui.overlay.classList.contains("hidden")) {
+      e.preventDefault();
       ui.startBtn.click();
     }
-  }, { passive: true });
+  }, { passive: false });
 
   // Keep UI correct initially
   syncUI();

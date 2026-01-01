@@ -9,12 +9,35 @@
 }
 
 *{ box-sizing:border-box; }
-html,body{ margin:0; height:100%; background:radial-gradient(1200px 700px at 50% 30%, #101033 0%, var(--bg) 60%); color:var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+
+/* Mobile-optimized: prevent scroll/zoom/selection */
+html, body{
+  height:100%;
+  margin:0;
+  overflow:hidden;                 /* no scrolling */
+  overscroll-behavior:none;        /* no pull-to-refresh / bounce */
+  touch-action:none;               /* disables browser gestures */
+  -webkit-user-select:none;
+  user-select:none;
+  background:radial-gradient(1200px 700px at 50% 30%, #101033 0%, var(--bg) 60%);
+  color:var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+/* Helps iOS Safari avoid rubber-banding */
+body{
+  position:fixed;
+  width:100%;
+}
 
 #game{
   display:block;
   width:100vw;
   height:100vh;
+  touch-action:none;
+}
+
+#touchUI, #stickBase, #shootBtn{
   touch-action:none;
 }
 
@@ -136,11 +159,12 @@ h1,h2{
 }
 .how ul{ margin:0; padding-left:18px; line-height:1.5; }
 
+/* slightly taller mobile control zone */
 #touchUI{
   position:fixed;
   left:0; right:0; bottom:0;
-  height:34vh;
-  min-height:210px;
+  height:38vh;
+  min-height:230px;
   pointer-events:none;
   z-index:6;
 }
@@ -167,6 +191,7 @@ h1,h2{
   background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.22), rgba(21,244,255,0.16));
   border:1px solid rgba(255,43,214,0.35);
   box-shadow: 0 0 18px rgba(255,43,214,0.18);
+  transform: translate(0px, 0px);
 }
 
 .btn.shoot{
@@ -183,7 +208,7 @@ h1,h2{
   position:absolute;
   left:18px;
   right:18px;
-  bottom:180px;
+  bottom:190px;
   text-align:center;
   opacity:0.75;
   font-size:12px;
