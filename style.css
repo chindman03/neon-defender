@@ -14,9 +14,9 @@
 html, body{
   height:100%;
   margin:0;
-  overflow:hidden;                 /* no scrolling */
-  overscroll-behavior:none;        /* no pull-to-refresh / bounce */
-  touch-action:none;               /* disables browser gestures */
+  overflow:hidden;
+  overscroll-behavior:none;
+  touch-action:none;
   -webkit-user-select:none;
   user-select:none;
   background:radial-gradient(1200px 700px at 50% 30%, #101033 0%, var(--bg) 60%);
@@ -127,7 +127,7 @@ body{
     0 0 70px rgba(255,43,214,0.08);
 }
 
-.panel.wide{ width:min(860px, 94vw); }
+.panel.wide{ width:min(920px, 94vw); }
 
 h1,h2{
   margin:0 0 6px;
@@ -158,6 +158,19 @@ h1,h2{
   padding-top:10px;
 }
 .how ul{ margin:0; padding-left:18px; line-height:1.5; }
+
+.statLine{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:10px 12px;
+  background: rgba(0,0,0,0.20);
+  box-shadow: 0 0 18px rgba(21,244,255,0.10);
+  margin-bottom:12px;
+  font-size:13px;
+  line-height:1.35;
+  opacity:0.95;
+}
+.statLine b{ color: var(--neon3); }
 
 /* slightly taller mobile control zone */
 #touchUI{
@@ -234,3 +247,4 @@ h1,h2{
 
 .upCard h3{ margin:0 0 6px; font-size:14px; letter-spacing:0.08em; text-transform:uppercase; color: var(--neon3); }
 .upCard p{ margin:0 0 10px; opacity:0.9; font-size:13px; line-height:1.35; }
+.upMeta{ font-size:12px; opacity:0.85; margin-bottom:10px; }
