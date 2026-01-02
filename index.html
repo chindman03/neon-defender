@@ -20,14 +20,14 @@
     <button id="muteBtn" class="btn small" aria-label="Mute">🔊</button>
   </div>
 
-  <canvas id="game"></canvas>
+  <canvas id="game" aria-label="Neon Defender game canvas"></canvas>
 
   <!-- Mobile controls overlay -->
-  <div id="touchUI" class="hidden">
-    <div id="stickBase">
+  <div id="touchUI" class="hidden" aria-hidden="true">
+    <div id="stickBase" aria-label="Move joystick">
       <div id="stickKnob"></div>
     </div>
-    <button id="shootBtn" class="btn shoot">SHOOT</button>
+    <button id="shootBtn" class="btn shoot" aria-label="Shoot">SHOOT</button>
     <div class="hint">Drag joystick • Tap SHOOT</div>
   </div>
 
@@ -35,9 +35,7 @@
   <div id="overlay" class="overlay">
     <div class="panel">
       <h1>NEON DEFENDER</h1>
-      <p class="sub">
-        Survive the waves. Pick an upgrade after each round.
-      </p>
+      <p class="sub">Survive the waves. Pick an upgrade after each round.</p>
 
       <div id="controlHint" class="controlHint"></div>
 
@@ -54,7 +52,7 @@
         </ul>
       </div>
 
-      <p class="tiny">Tip: tap the canvas once to enable audio on mobile.</p>
+      <p class="tiny">Tip: tap once to enable audio on mobile.</p>
     </div>
   </div>
 
@@ -63,9 +61,11 @@
     <div class="panel wide">
       <h2>CHOOSE AN UPGRADE</h2>
       <p class="sub">Pick one to prepare for the next wave.</p>
+
       <div id="statLine" class="statLine"></div>
       <div id="upgradeGrid" class="upgradeGrid"></div>
-      <p class="tiny">Upgrades stack. Waves get longer and tougher.</p>
+
+      <p class="tiny">Upgrades stack. Waves get longer and +5% harder each round.</p>
     </div>
   </div>
 

@@ -169,7 +169,6 @@
       audio.step++;
     }
   }
-  }
 
   function chooseInitialMusic() {
     if (audio.preset) return;
