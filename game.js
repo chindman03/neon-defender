@@ -66,25 +66,37 @@
   };
 
   const musicPresets = [
-    { name: "CRUISE", tempo: 128,
-      bass: [55,55,73.42,82.41,55,55,98,82.41],
-      arp:  [440,554.37,659.25,880,659.25,554.37,493.88,659.25],
-      hat:  [0,0,1,0, 0,1,0,0, 0,0,1,0, 0,1,0,0],
-      lead: [0,0,0,1, 0,0,1,0, 0,0,0,1, 0,1,0,0],
+    // Modern / intense synthwave-ish (more driving than the old opener)
+    {
+      name: "NEONRUSH",
+      tempo: 156,
+      bass: [55,55,82.41,73.42, 55,98,82.41,110],
+      arp:  [783.99,880,987.77,1174.66, 987.77,880,783.99,659.25],
+      hat:  [1,0,1,1, 1,1,0,1, 1,0,1,1, 1,1,0,1],
+      lead: [0,1,1,0, 1,0,1,0, 1,1,0,1, 0,1,1,0],
     },
-    { name: "CHASE", tempo: 144,
+    // faster, more intense
+    {
+      name: "CHASE",
+      tempo: 160,
       bass: [55,82.41,55,98, 55,82.41,73.42,110],
       arp:  [659.25,880,987.77,880, 659.25,739.99,880,987.77],
       hat:  [0,1,0,1, 1,0,1,0, 0,1,0,1, 1,0,1,0],
       lead: [0,0,1,0, 0,1,0,0, 1,0,0,1, 0,0,1,0],
     },
-    { name: "GRIDRUN", tempo: 136,
+    // darker drive
+    {
+      name: "GRIDRUN",
+      tempo: 148,
       bass: [49,49,65.41,73.42,49,49,87.31,73.42],
       arp:  [392,493.88,587.33,784,587.33,493.88,440,587.33],
       hat:  [0,0,1,0, 1,0,0,1, 0,0,1,0, 1,0,0,1],
       lead: [0,1,0,0, 0,0,1,0, 0,1,0,0, 1,0,0,1],
     },
-    { name: "OVERDRIVE", tempo: 152,
+    // high energy
+    {
+      name: "OVERDRIVE",
+      tempo: 166,
       bass: [55,55,110,98, 55,82.41,73.42,98],
       arp:  [880,987.77,1174.66,987.77, 880,783.99,659.25,783.99],
       hat:  [1,0,1,0, 1,1,0,1, 1,0,1,0, 1,1,0,1],
@@ -155,17 +167,12 @@
 
       audio.nextNoteTime += stepDur;
       audio.step++;
-
-      if (audio.deathUntil > 0 && a.currentTime > audio.deathUntil) {
-        audio.deathUntil = 0;
-        audio.preset = audio.savedPreset || pick(musicPresets);
-        audio.step = 0;
-        audio.nextNoteTime = a.currentTime + 0.05;
-      }
     }
+  }
   }
 
   function chooseInitialMusic() {
+    if (audio.preset) return;
     audio.preset = pick(musicPresets);
   }
 
@@ -184,7 +191,8 @@
     audio.preset = pick(deathPresets);
     audio.step = 0;
     audio.nextNoteTime = a.currentTime + 0.03;
-    audio.deathUntil = a.currentTime + 3.2;
+    audio.deathUntil = 0; // keep death track until restart
+
 
     const t = a.currentTime + 0.02;
     const freqs = [880, 740, 659, 587, 493, 440];
@@ -211,6 +219,7 @@
 
   const state = {
     running: false,
+    difficulty: 1,
     inUpgrade: false,
     wave: 1,
     score: 0,
@@ -387,11 +396,20 @@
 
     const type = weightedType(wave);
     const base = type.make(wave);
+
+    // Apply per-wave difficulty scaling
+    base.hp = Math.max(1, Math.round(base.hp * state.difficulty));
+    base.speed = base.speed * state.difficulty;
+    if (base.touchDmg) base.touchDmg = Math.max(1, Math.round(base.touchDmg * (1 + (state.difficulty - 1) * 0.6)));
+
     enemies.push({ type: type.key, x, y, ...base });
   }
 
   // ---------- Wave pacing: longer waves over time ----------
   function startWave(wave) {
+    // Difficulty scales by +5% per wave
+    state.difficulty = Math.pow(1.05, Math.max(0, wave - 1));
+
     enemies.length = 0;
     enemyBullets.length = 0;
 
@@ -627,6 +645,7 @@
   ui.howBtn.addEventListener("click", () => ui.how.classList.toggle("hidden"));
 
   ui.startBtn.addEventListener("click", () => {
+    chooseInitialMusic();
     startMusic();
     ui.overlay.classList.add("hidden");
     ui.gameover.classList.add("hidden");
@@ -639,6 +658,7 @@
   });
 
   ui.restartBtn.addEventListener("click", () => {
+    // keep the same track on restart (do not reroll)
     startMusic();
     ui.gameover.classList.add("hidden");
     ui.overlay.classList.add("hidden");
@@ -759,8 +779,8 @@
         e.shootCd -= dt;
         if (e.shootCd <= 0) {
           e.shootCd = 1.15 - Math.min(0.6, state.wave * 0.03) + rand(-0.10, 0.12);
-          const spd = 210 + state.wave * 6;
-          enemyBullets.push({ x: e.x, y: e.y, vx: nx * spd, vy: ny * spd, size: 6, dmg: 1 + Math.floor(state.wave * 0.08), life: 2.0 });
+          const spd = (210 + state.wave * 6) * state.difficulty;
+          enemyBullets.push({ x: e.x, y: e.y, vx: nx * spd, vy: ny * spd, size: 6, dmg: Math.max(1, Math.round((1 + state.wave * 0.08) * (1 + (state.difficulty - 1) * 0.7))), life: 2.0 });
           burst(e.x, e.y, 6, 35);
         }
       } else {
